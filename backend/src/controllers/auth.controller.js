@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../lib/utils.js";
+import cloudinary from "../lib/cloudinary.js";
 export const signup = async(req, res) => {
     const { fullName, email, password } = req.body;
 
@@ -101,9 +102,46 @@ export const logout = (req, res) => {
     }
 
 export const updateProfile = async (req, res) => {
-   
-    try{}
+
+    try{
+        const{profilePicture} = req.body;
+
+        const userID = req.user._id 
+        if(!profilePicture){
+              return res.status(400).json({message: 'Profile picture is required'});
+         }
+
+         await cloudinary.uploader.upload(profilePicture)
+          const upldatedUser = await User.findByIdAndUpdate(userID, {
+            profilePicture: result.secure_url,
+            }, {new: true});
+            if(!upldatedUser){
+                return res.status(400).json({message: 'User not found'});
+            }
+            console.log('User updated successfully:', upldatedUser);
+            return res.status(200).json({
+                _id: upldatedUser._id,
+                fullName: upldatedUser.fullName,
+                email: upldatedUser.email,
+                profilePicture: upldatedUser.profilePicture,
+            });
+
+    }
     catch(error){
 
     }
+}
+
+export const checkAuth = (req, res) => {
+     try{
+        console.log('User:', req.user);
+        res.status(200).json(req.user)
+
+     }
+     catch(error){
+        console.error(error);
+        console.log('Error in checkAuth controller:', error.message);
+        return res.status(500).json({message: 'Server error'});
+
+     }
 }
