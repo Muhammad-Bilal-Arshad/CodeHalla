@@ -54,9 +54,38 @@ export const signup = async(req, res) => {
     }
     }
 
-export const login = (req, res) => {
-    res.send('Login Page');
+export const login = async (req, res) => {
+   
+    const { email, password } = req.body;
+    console.log('Received data:', req.body);
+    if(!email || !password){
+        return res.status(400).json({message: 'Please fill all fields'});
     }
+    try{
+        const user = await User.findOne({ email });
+        if(!user){
+            return res.status(400).json({message: 'User not found'});
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if(!isMatch){
+            return res.status(400).json({message: 'Invalid credentials'});
+        }
+        generateToken(user._id, res);
+        console.log('User logged in successfully:', user);
+        return res.status(200).json({
+            _id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            profilePicture: user.profilePicture,
+        });
+    }
+    catch(error)
+{
+        console.error(error);
+        console.log('Error in login controller:', error.message);
+        return res.status(500).json({message: 'Server error'});
+
+}    }
 
 export const logout = (req, res) => {
     res.send('Logout Page');
